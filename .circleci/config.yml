@@ -11,14 +11,10 @@ commands:
             aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
-    parameters:
-# Add parameter here 
     steps:
       - run:
           name: Revert migrations
-# Add when this will run
           command: |
-# Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
             SUCCESS = $(curl -k https://kvdb.io/AjrJrGDp9Xbrznw69Cgmg4/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1')
             if(( $SUCCESS==1 )); 
             then
@@ -31,20 +27,30 @@ commands:
     description: Install AWS CLI v2
     steps:
       - run:
-        name: Install AWS CLI v2
-        command: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip awscliv2.zip
-          sudo ./aws/install 
+          name: Install AWS CLI v2
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install 
   install_ansible:
     description: Install Ansible
     steps:
       - run:
-        name: Install Ansible
-        command: |
-          python3 -m pip install --user ansible 
-          install_nodejs:
-          description: Install Node.js 13.8.0
+          name: Install Ansible
+          command: |
+            python3 -m pip install --user ansible 
+  install_nodejs:
+    description: Install Node.js 13.8.0
+    steps:
+      - run:
+          name: Install nodejs
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+            sudo apt install -y nodejs
+            # Use n version manager to use Node.js v13.8.0
+            sudo npm install --global n
+            sudo n 13.8.0
+
   
 jobs:
   build-frontend:
@@ -61,8 +67,8 @@ jobs:
             npm install
             npm run build
       - save_cache:
-        paths: [frontend/node_modules]
-        key: frontend-build
+          paths: [frontend/node_modules]
+          key: frontend-build
 
   build-backend:
     docker:
@@ -72,11 +78,11 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
-        name: Back-end build
-        command: |
-          cd backend
-          npm install
-          npm run build
+          name: Back-end build
+          command: |
+            cd backend
+            npm install
+            npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
@@ -105,13 +111,13 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-        keys: [backend-test]
+          keys: [backend-test]
       - run:
-        name: Back-end test
-        command: |
-          cd backend
-          npm install
-          npm run test
+          name: Back-end test
+          command: |
+            cd backend
+            npm install
+            npm run test
       - save_cache:
           paths: [backend/node_modules]
           key: backend-test
@@ -152,7 +158,7 @@ jobs:
     steps:
       - checkout 
       - run:
-        name: 
+          name: install dependencies 
           command: |
             yum -y install tar gzip
       - run:
@@ -227,7 +233,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-        keys: [backend-build]
+          keys: [backend-build]
   # Moved awscli and node install to Commands above
       - install_awscli
       - install_nodejs
@@ -248,7 +254,7 @@ jobs:
             curl -k https://kvdb.io/AjrJrGDp9Xbrznw69Cgmg4/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1'
             fi
           # Here's where you will add some code to rollback on failure
-   -  - revert-migrations # You missed this one 
+      - revert-migrations # You missed this one 
       - destroy-environment
 
 # deploy-frontend:
@@ -337,6 +343,7 @@ jobs:
 workflows:
   default:
     jobs:
+
     - build-frontend
     - build-backend
     - test-frontend:
@@ -349,12 +356,10 @@ workflows:
         requires: [build-frontend]
     - deploy-infrastructure:
         requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-    # filters:
-    # branches:
-    # only: [test-feature-branch]
+  # filters:
+  # branches:
+  # only: [test-feature-branch]
     - configure-infrastructure:
         requires: [deploy-infrastructure] 
     - run-migrations:
-        requires: [configure-infrastructure]
-    - deploy-frontend:
         requires: [configure-infrastructure]
