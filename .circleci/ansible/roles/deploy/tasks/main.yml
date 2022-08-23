@@ -1,0 +1,32 @@
+ name: "Extract Zipped artifact to EC2"
+  unarchive:
+    src: ~/project/artifact.tar.gz
+    dest: /home/ubuntu
+
+- name: "Install NodeJS"
+  become: true
+  apt:
+    name: ["nodejs"]
+    state: latest
+    update_cache: yes
+
+- name: "Install NPM"
+  become: true
+  apt:
+    name: ["npm"]
+    state: latest
+    update_cache: yes
+
+- name: "Install pm2"
+  become: yes
+  npm:
+    name: pm2
+    global: yes
+
+- name: "Install Packages"
+  command:
+    cmd: npm install
+
+- name: "Start application"
+  command:
+    cmd: pm2 start npm -- start

@@ -257,89 +257,92 @@ jobs:
       # - revert-migrations # You missed this one 
       - destroy-environment
 
-# deploy-frontend:
-# docker:
-# # Docker image here that supports AWS CLI
-# - image: amazon/aws-cli
-# steps:
-# # Checkout code from git
-# - checkout
-# - attach_workspace:
-# # Must be absolute path or relative path from working_directory
-# at: ~/
-# # You dont need to install awscli since you're already using awscli image for the job
-# - run:
-# name: Install aws-cli
-# command: |
-# apk add --no-cache aws-cli
-# # You also don't need to install ansible here since you're not connecting to EC2 resource
-# - run:
-# name: Install ansible
-# command: |
-# apk add --update ansible
-# - run:
-# name: install npm
-# command: |
-# apk add --update npm
-# - run:
-# name: install nodejs
-# command: |
-# apk add --update nodejs
-# - run:
-# name: Get backend url
-# command: |
-# export BACKEND_IP = $(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --output text)
-# export API_URL="http://${BACKEND_IP}:3030"
-# echo "API_URL = ${API_URL}"
-# echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
-# cat frontend/.env
-# - run:
-# name: Deploy frontend objects
-# command: |
-# cd frontend
-# npm install
-# npm run build
-# tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
-# aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+  deploy-frontend:
+    docker:
+    # Docker image here that supports AWS CLI
+      - image: amazon/aws-cli
+    steps:
+    # Checkout code from git
+      - checkout
+      - attach_workspace:
+    # Must be absolute path or relative path from working_directory
+          at: ~/
+   
+      - run:
+          name: install npm
+          command: |
+            apk add --update npm
+      - run:
+          name: install nodejs
+          command: |
+            apk add --update nodejs
+      - run:
+          name: Get backend url
+          command: |
+            export BACKEND_IP = $(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --output text)
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "API_URL = ${API_URL}"
+            echo API_URL="http://${BACKEND_IP}:3030" >> frontend/.env
+            cat frontend/.env
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd frontend
+            npm install
+            npm run build
+            tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
+            aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+    # Here's where you will add some code to rollback on failure 
+    - destroy-environment
+    - revert-migrations
+  deploy-backend:
+    docker:
+  #  Docker image here that supports Ansible
+      - image: python:3.7-alpine3.16
+    steps:
+      # Checkout code from git
+      - checkout
+    # Add ssh keys with fingerprint
+      - add_ssh_keys:
+          fingerprints: ["e9:b1:57:fb:59:4d:1a:63:b6:d3:ad:27:ff:d9:0f:26"]
+    #  attach workspace
+      - attach_workspace:
+    # Must be absolute path or relative path from working_directory
+          at: ~/
+      - run:
+          name: Install tar
+          command: |
+            apk add --no-cache aws-cli
+      - run:
+          name: Install ansible
+          command: |
+            apk add --update ansible
+      - run:
+          name: install npm
+          command: |
+            apk add --update npm
+      - run:
+          name: install nodejs
+          command: |
+            apk add --update nodejs
+      - run:
+          name: Deploy backend
+          command: |
+# # your code here
+            cd backend
+            npm i
+            npm run build
+            cd ..
+            # Zip the directory
+            tar -C backend -czvf artifact.tar.gz .
+            cd .circleci/ansible
+            echo "Contents  of the inventory.txt file is -------"
+            cat inventory.txt
+            ansible-playbook -i inventory.txt deploy-backend.yml
 # # Here's where you will add some code to rollback on failure 
-# - destroy-environment
-# - revert-migrations
-# # deploy-backend:
-# # docker:
-# # # Docker image here that supports Ansible
-# # steps:
-# # # Checkout code from git
-# # - checkout
-# # # Add ssh keys with fingerprint
-# # - add_ssh_keys:
-# # fingerprints: ["e9:b1:57:fb:59:4d:1a:63:b6:d3:ad:27:ff:d9:0f:26"]
-# # # attach workspace
-# # - attach_workspace:
-# # # Must be absolute path or relative path from working_directory
-# # at: ~/
-# # - run:
-# # name: Install tar
-# # command: |
-# # apk add --no-cache aws-cli
-# # - run:
-# # name: Install ansible
-# # command: |
-# # apk add --update ansible
-# # - run:
-# # name: install npm
-# # command: |
-# # apk add --update npm
-
-# # - run:
-# # name: install nodejs
-# # command: |
-# # apk add --update nodejs
-# # - run:
-# # name: Deploy backend
-# # command: |
-# # # your code here
-# # # Here's where you will add some code to rollback on failure 
-
+      - revert migrations
+      - destroy environment
+      
 workflows:
   default:
     jobs:
