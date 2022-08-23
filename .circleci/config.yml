@@ -11,7 +11,6 @@ commands:
           name: Destroy environment
           when: on_fail
           command: |
-            aws s3 rm "s3://udapeople-<<parameters.workflow_id >>" --recursive
             aws cloudformation delete-stack --stack-name "udapeople-frontend-<< parameters.workflow_id >>"
             aws cloudformation delete-stack --stack-name "udapeople-backend-<< parameters.workflow_id >>"
   
@@ -25,7 +24,7 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |
-            SUCCESS=$(curl -k https://kvdb.io/qbPDYfCByWMivWqhJT2Fm/migration_<<parameters.workflow_id>>)
+            SUCCESS=$(curl -k https:/AjrJrGDp9Xbrznw69Cgmg4/kvdb.io//migration_<<parameters.workflow_id>>)
             echo "$SUCCESS"
             if [[ "${SUCCESS}" == 1 ]];  
             then
@@ -280,21 +279,30 @@ jobs:
     steps:
     # Checkout code from git
       - checkout
-      - install_awscli
+
       - attach_workspace:
     # Must be absolute path or relative path from working_directory
           at: ~/
    
       - run:
-          name: install npm, tar
+          name: install dependencies
           command: |
+            apk add --no-cache aws-cli
             apk add --update npm
             apk add tar
             apk add gzip
       - run:
+          name: install ansible
+          command: |
+            apk add ansible
+      - run:
           name: install nodejs
           command: |
             apk add --update nodejs
+      - run:
+          name: install curl
+          command: |
+            apk add curl
       - run:
           name: Get backend url
           command: |
