@@ -2,27 +2,37 @@ version: 2.1
 
 commands:
   destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    parameters:
+      workflow_id:
+        type: string
     steps:
       - run:
           name: Destroy environment
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}
-            aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}
-  # revert-migrations:
-  #   description: Revert the last migration if successfully run in the current workflow.
-  #   steps:
-  #     - run:
-  #         name: Revert migrations
-  #         command: |
-  #           SUCCESS = $(curl -k https://kvdb.io/AjrJrGDp9Xbrznw69Cgmg4/migration_${CIRCLE_WORKFLOW_ID:0:7} -d '1')
-  #           if(( $SUCCESS==1 )); 
-  #           then
-  #           cd ~/project/backend
-  #           npm install
-  #           npm run migrations:revert
-  #           fi
-# Added these to command to make code clean
+            aws s3 rm "s3://udapeople-<<parameters.workflow_id >>" --recursive
+            aws cloudformation delete-stack --stack-name "udapeople-frontend-<< parameters.workflow_id >>"
+            aws cloudformation delete-stack --stack-name "udapeople-backend-<< parameters.workflow_id >>"
+  
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      workflow_id:
+        type: string
+    steps:
+      - run:
+          name: Revert migrations
+          when: on_fail
+          command: |
+            SUCCESS=$(curl -k https://kvdb.io/qbPDYfCByWMivWqhJT2Fm/migration_<<parameters.workflow_id>>)
+            echo "$SUCCESS"
+            if [[ "${SUCCESS}" == 1 ]];  
+            then
+              cd ~/project/backend
+              npm install
+              npm run migrations:revert
+            fi
   install_awscli:
     description: Install AWS CLI v2
     steps:
@@ -235,6 +245,7 @@ jobs:
       - restore_cache:
           keys: [backend-build]
   # Moved awscli and node install to Commands above
+    
       - install_awscli
       - install_nodejs
   # attaching workspace so we have access to migrations_dump.txt file later
@@ -256,6 +267,7 @@ jobs:
           # Here's where you will add some code to rollback on failure
       # - revert-migrations # You missed this one 
       - destroy-environment
+      - revert-migrations
 
   deploy-frontend:
     docker:
