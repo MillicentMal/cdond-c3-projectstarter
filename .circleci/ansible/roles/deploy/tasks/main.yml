@@ -1,4 +1,4 @@
- name: "Extract Zipped artifact to EC2"
+- name: "Extract Zipped artifact to EC2"
   unarchive:
     src: ~/project/artifact.tar.gz
     dest: /home/ubuntu

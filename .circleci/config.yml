@@ -276,18 +276,21 @@ jobs:
   deploy-frontend:
     docker:
     # Docker image here that supports AWS CLI
-      - image: amazon/aws-cli
+      - image: python:3.7-alpine3.16
     steps:
     # Checkout code from git
       - checkout
+      - install_awscli
       - attach_workspace:
     # Must be absolute path or relative path from working_directory
           at: ~/
    
       - run:
-          name: install npm
+          name: install npm, tar
           command: |
             apk add --update npm
+            apk add tar
+            apk add gzip
       - run:
           name: install nodejs
           command: |
@@ -406,6 +409,21 @@ jobs:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
       - revert-migrations:
           workflow_id: "${CIRCLE_WORKFLOW_ID:0:7}"
+  
+  cloudfront-update:
+    docker:
+      # Docker image here that supports AWS CLI
+    steps:
+      # Checkout code from git
+      - run:
+          name: Install dependencies
+          command: |
+            # your code here
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            # your code here
+      # Here's where you will add some code to rollback on failure 
 
 workflows:
   default:
