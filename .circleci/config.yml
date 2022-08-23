@@ -377,7 +377,7 @@ jobs:
   smoke-test:
     docker:
       # Lightweight Docker image 
-      - image: alpine:latest
+      - image: python:3.7-alpine3.16
     steps:
       - checkout
       - run:
